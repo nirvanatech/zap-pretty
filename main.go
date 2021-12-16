@@ -41,7 +41,7 @@ func init() {
 	severityToColor = make(map[string]Color)
 	severityToColor["debug"] = BlueFg
 	severityToColor["info"] = GreenFg
-	severityToColor["warning"] = BrownFg
+	severityToColor["warning"] = YellowFg
 	severityToColor["error"] = RedFg
 	severityToColor["dpanic"] = RedFg
 	severityToColor["panic"] = RedFg
@@ -221,10 +221,17 @@ func (p *processor) maybePrettyPrintZapLine(line string, lineData map[string]int
 		stacktrace = t
 	}
 
+	errorVerbose := ""
+	if t, ok := lineData["errorVerbose"].(string); ok && t != "" {
+		delete(lineData, "error")
+		delete(lineData, "errorVerbose")
+		errorVerbose = t
+	}
+
 	p.writeJSON(&buffer, lineData)
 
 	if stacktrace != "" {
-		p.writeErrorDetails(&buffer, "", stacktrace)
+		p.writeErrorDetails(&buffer, errorVerbose, stacktrace)
 	}
 
 	return buffer.String(), nil
@@ -366,7 +373,7 @@ func writeErrorVerbose(buffer *bytes.Buffer, errorVerbose string) {
 				writeStackLine(buffer, *linePrevious, startedSection, false)
 				startedSection = false
 			} else {
-				buffer.WriteString(*linePrevious)
+				buffer.WriteString(Gray(12, *linePrevious).String())
 				buffer.WriteByte('\n')
 
 				startedSection = false
@@ -402,7 +409,11 @@ func writeStackLine(buffer *bytes.Buffer, line string, isFirstStack, isLastStack
 	}
 
 	buffer.WriteString("    ")
-	buffer.WriteString(strings.Replace(line, temporaryStackSpacer, "\n    \t", 2))
+	buffer.WriteString(
+		Gray(
+			12,
+			strings.Replace(line, temporaryStackSpacer, "\n    \t", 2),
+		).String())
 
 	if !isLastStack {
 		buffer.WriteByte('\n')
@@ -421,11 +432,7 @@ func (p *processor) writeJSON(buffer *bytes.Buffer, data map[string]interface{})
 	var jsonBytes []byte
 	var err error
 
-	if len(data) <= 3 {
-		jsonBytes, err = json.Marshal(data)
-	} else {
-		jsonBytes, err = json.MarshalIndent(data, "", "  ")
-	}
+	jsonBytes, err = json.MarshalIndent(data, "", "  ")
 
 	if err != nil {
 		// FIXME: We could print each line as raw text maybe when it's not working?
