@@ -68,10 +68,12 @@ type processor struct {
 	scanner       *bufio.Scanner
 	output        io.Writer
 	showAllFields bool
+	minify        bool
 }
 
 var showAllFlag = flag.Bool("all", false, "Show ")
 var versionFlag = flag.Bool("version", false, "Prints version information and exit")
+var minifyFlag = flag.Bool("mini", false, "Only print log message (without structure)")
 
 var showAll = false
 
@@ -94,6 +96,7 @@ func main() {
 		scanner:       scanner,
 		output:        os.Stdout,
 		showAllFields: *showAllFlag,
+		minify:        *minifyFlag,
 	}
 
 	processor.process()
@@ -208,6 +211,9 @@ func (p *processor) maybePrettyPrintZapLine(line string, lineData map[string]int
 
 	var buffer bytes.Buffer
 	p.writeHeader(&buffer, logTimestamp, lineData["level"].(string), lineData["caller"].(string), lineData["msg"].(string))
+	if p.minify {
+		return buffer.String(), nil
+	}
 
 	// Delete standard stuff from data fields
 	delete(lineData, "level")
