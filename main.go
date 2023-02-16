@@ -234,10 +234,20 @@ func (p *processor) maybePrettyPrintZapLine(line string, lineData map[string]int
 		errorVerbose = t
 	}
 
+	rawOutput := ""
+	if t, ok := lineData["rawOutput"].(string); ok && t != "" {
+		delete(lineData, "rawOutput")
+		rawOutput = t
+	}
+
 	p.writeJSON(&buffer, lineData)
 
 	if stacktrace != "" {
 		p.writeErrorDetails(&buffer, errorVerbose, stacktrace)
+	}
+
+	if rawOutput != "" {
+		p.writeRawOutput(&buffer, rawOutput)
 	}
 
 	return buffer.String(), nil
@@ -401,6 +411,12 @@ func writeErrorVerbose(buffer *bytes.Buffer, errorVerbose string) {
 			buffer.WriteString(*lineCurrent)
 		}
 	}
+}
+
+func (p *processor) writeRawOutput(buffer *bytes.Buffer, rawOutput string) {
+	buffer.WriteString("\nRaw Output (from 'rawOutput')\n")
+	buffer.WriteString(rawOutput)
+	buffer.WriteString("\n-- EOF --")
 }
 
 func writeStackSectionTitle(buffer *bytes.Buffer, line string) {
