@@ -1,4 +1,4 @@
-module github.com/maoueh/zap-pretty
+module github.com/nirvanatech/zap-pretty
 
 require (
 	github.com/cockroachdb/errors v1.8.6
